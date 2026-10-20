@@ -1,4 +1,4 @@
-# Studyroom
+# snn
 
 Studyroom is a responsive student library for browsing class resources, preparing for exams, and messaging accepted friends. It uses plain HTML, CSS, JavaScript, Vite, and Supabase. The app starts in clearly labeled demo mode when Supabase credentials are not configured; it does not invent notes, accounts, or conversations.
 

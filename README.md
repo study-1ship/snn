@@ -59,11 +59,13 @@ Resource types are `notes`, `pba`, `past_paper`, and `exam_prep`. Admins can pub
 
 ## Deploy
 
-1. Push the project to a Git repository and import it into Vercel, or use another static host.
-2. Set the build command to `npm run build` and the output directory to `dist`.
-3. Add `VITE_SUPABASE_URL` and `VITE_SUPABASE_ANON_KEY` to the host's build environment settings. These `VITE_` values are included in browser code; use only the anon/public key.
-4. Deploy, then add the production domain under Supabase **Authentication > URL Configuration > Redirect URLs** and set it as the Site URL.
-5. Apply future SQL migrations to the same Supabase project before deploying app changes that depend on them.
+GitHub Pages deploys automatically from `main` using `.github/workflows/deploy-pages.yml`.
+
+1. In the GitHub repository, open **Settings > Pages** and set the build and deployment source to **GitHub Actions**.
+2. In **Settings > Secrets and variables > Actions > Variables**, add `VITE_SUPABASE_URL` and `VITE_SUPABASE_ANON_KEY`. These values are embedded in the browser bundle, so use only the Supabase anon/public (publishable) key, never the service-role/secret key. The app still deploys in demo mode if these variables are omitted.
+3. Push to `main` or manually run **Deploy Studyroom to GitHub Pages** from the **Actions** tab. Once the workflow succeeds, the project site is available at `https://study-1ship.github.io/snn/` and the admin entry is `/snn/admin.html`.
+4. In Supabase **Authentication > URL Configuration**, add the GitHub Pages site URL to **Redirect URLs**. Keep the local URL there too for local testing.
+5. Apply future SQL migrations to the Supabase project before deploying app changes that depend on them.
 
 ## Project checks
 

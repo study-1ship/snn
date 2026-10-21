@@ -49,7 +49,7 @@ a { color: inherit; }
 .lemon { background: #f5f0d7; color: #958442; }
 .rose { background: #f5e5e4; color: #aa6767; }
 .mint { background: #e1efeb; color: #478074; }
-.sidebar-bottom { margin-top: auto; }
+.sidebar-bottom { position: relative; margin-top: auto; }
 .side-note { position: relative; overflow: hidden; margin: 0 3px 19px; padding: 15px 13px 14px; border-radius: 8px; background: #f0f4ee; }
 .side-note::after { position: absolute; right: -12px; bottom: -27px; width: 80px; height: 80px; border: 1px solid #d8e5d9; border-radius: 50%; content: ""; }
 .side-note-art { display: grid; width: 29px; height: 29px; place-items: center; border-radius: 8px; background: #dcebe1; color: var(--green); }
@@ -57,6 +57,9 @@ a { color: inherit; }
 .side-note > span { color: var(--muted); font-size: 10px; }
 .admin-link { margin: 0 0 12px; }
 .profile-row { display: flex; align-items: center; width: 100%; min-height: 55px; gap: 10px; padding: 7px; border: 0; border-top: 1px solid var(--line); background: transparent; text-align: left; cursor: pointer; }
+.profile-menu { position: absolute; z-index: 6; right: 0; bottom: 61px; left: 0; display: grid; gap: 3px; padding: 6px; border: 1px solid var(--line); border-radius: 8px; background: #fff; box-shadow: 0 10px 28px rgb(38 51 47 / 12%); }
+.profile-menu .nav-item { min-height: 38px; }
+.teacher-row { min-height: 54px; }
 .avatar { display: grid; width: 34px; height: 34px; flex: 0 0 auto; place-items: center; border-radius: 50%; background: #e7eee8; color: var(--green-dark); font-size: 11px; font-weight: 700; }
 .profile-copy, .person-copy { display: grid; min-width: 0; gap: 3px; }
 .profile-copy strong, .person-copy strong { overflow: hidden; font-size: 11px; text-overflow: ellipsis; white-space: nowrap; }

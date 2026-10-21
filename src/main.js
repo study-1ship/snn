@@ -30,7 +30,6 @@ const navItems = [
   ["overview", "Overview", BookOpen],
   ["subjects", "Subjects", GraduationCap],
   ["exam", "Exam prep", BookOpenCheck],
-  ["messages", "Messages", MessageCircle],
 ];
 const subjectIcons = [FlaskConical, Atom, Laptop, BookOpen, BookOpen, BookOpen, BookOpen];
 const tints = ["sage", "sky", "peach", "lilac", "lemon", "rose", "mint"];
@@ -54,6 +53,7 @@ const state = {
   authOpen: false,
   authMode: "signin",
   profileOpen: false,
+  profileMenuOpen: false,
   modalError: "",
   mobileOpen: false,
   notice: "",
@@ -64,6 +64,9 @@ const state = {
   friendResults: [],
   conversationId: "",
   conversationName: "",
+  conversationType: "friend",
+  teacherId: "",
+  teacherConversations: [],
   messages: [],
 };
 
@@ -122,9 +125,12 @@ function setNotice(message) {
 function setView(view, preserveSubject = false) {
   state.view = view;
   state.mobileOpen = false;
+  state.profileMenuOpen = false;
   state.notice = "";
   if (view !== "messages") {
     state.conversationId = "";
+    state.conversationType = "friend";
+    state.conversationType = "friend";
     state.messages = [];
     stopMessageSubscription();
   }
@@ -203,12 +209,12 @@ function personRow(person, action, selected = false) {
 }
 
 function messageView() {
-  const heading = pageHeading("STUDY TOGETHER", "Messages", "Find a friend by username and keep the conversation going.");
+  const heading = pageHeading("STUDY TOGETHER", "Messages", "Message your teacher or find a friend.");
   if (demoMode || !state.profile) {
     const title = demoMode ? "Connect to find your people" : "Sign in to message";
     const copy = demoMode
-      ? "Friend requests and private messages are available when Supabase is connected. Conversations stay between you and the friend you chose."
-      : "Create an account or sign in to find friends by username and start private conversations.";
+      ? "Teacher messages and private friend conversations are available when Supabase is connected."
+      : "Create an account or sign in to message your teacher and find friends.";
     return `${heading}<div class="connection-gate"><div class="gate-icon">${icon("Users", 24)}</div><h2>${title}</h2><p>${copy}</p>${!demoMode ? `<button class="button button-dark" data-action="auth">Sign in or join ${icon("ArrowRight", 15)}</button>` : ""}</div>`;
   }
   const incoming = state.requests.filter((request) => request.status === "pending" && request.recipient_id === state.userId);
@@ -220,10 +226,16 @@ function messageView() {
   }).join("") : `<p class="quiet-empty">No incoming requests.</p>`;
   const friendRows = friends.length ? friends.map((person) => personRow(person, `<button class="icon-button" data-action="open-chat" data-id="${person.id}" title="Open conversation" aria-label="Message ${escapeHtml(person.username)}">${icon("MessageCircle", 16)}</button>`, state.conversationId && state.conversationName === (person.display_name || person.username))).join("") : `<p class="quiet-empty">Accepted friends appear here.</p>`;
   const resultRows = state.friendResults.map((person) => personRow(person, `<button class="icon-button accept-icon" data-action="friend-request" data-id="${person.id}" title="Send friend request" aria-label="Add @${escapeHtml(person.username)}">${icon("UserPlus", 17)}</button>`)).join("");
+  const teacherRows = state.profile.role === "admin"
+    ? state.teacherConversations.map(({ conversation, person }) => personRow(person, `<button class="icon-button" data-action="open-teacher-chat" data-id="${conversation.id}" title="Open student conversation" aria-label="Open student conversation">${icon("MessageCircle", 16)}</button>`, state.conversationId === conversation.id)).join("") || `<p class="quiet-empty">Student messages will appear here.</p>`
+    : `<div class="person-row teacher-row ${state.conversationType === "teacher" ? "person-selected" : ""}"><span class="avatar avatar-small">${icon("GraduationCap", 16)}</span><span class="person-copy"><strong>Teacher</strong><small>${state.teacherId ? "Request notes or ask a question" : "No admin account is available yet"}</small></span><span class="person-action">${state.teacherId ? `<button class="icon-button" data-action="open-teacher-chat" title="Message teacher" aria-label="Message teacher">${icon("MessageCircle", 16)}</button>` : ""}</span></div>`;
   const chatContent = state.conversationId
-    ? `<div class="chat-header"><button class="icon-button chat-back" data-action="close-chat" aria-label="Back to friends">${icon("ChevronRight", 19)}</button><span class="avatar avatar-small">${escapeHtml(initials(state.conversationName))}</span><div><strong>${escapeHtml(state.conversationName)}</strong><small>Private conversation</small></div></div><div class="chat-messages">${state.messages.length ? state.messages.map((message) => `<div class="message-bubble ${message.sender_id === state.userId ? "mine" : "theirs"}"><p>${escapeHtml(message.body)}</p><time>${new Date(message.created_at).toLocaleTimeString([], { hour: "numeric", minute: "2-digit" })}</time></div>`).join("") : `<div class="chat-empty"><span>${icon("MessageCircle", 22)}</span><p>Say hello and start the conversation.</p></div>`}</div><form class="chat-compose" id="message-form"><input name="message" aria-label="Message" placeholder="Write a message..." autocomplete="off" maxlength="4000" /><button class="button button-dark send-button" aria-label="Send message">${icon("Send", 16)}</button></form>`
+    ? `<div class="chat-header"><button class="icon-button chat-back" data-action="close-chat" aria-label="Back to conversations">${icon("ChevronRight", 19)}</button><span class="avatar avatar-small">${state.conversationType === "teacher" && state.profile.role !== "admin" ? icon("GraduationCap", 16) : escapeHtml(initials(state.conversationName))}</span><div><strong>${escapeHtml(state.conversationType === "teacher" && state.profile.role !== "admin" ? "Teacher" : state.conversationName)}</strong><small>${state.conversationType === "teacher" ? "Request notes or ask a question" : "Private conversation"}</small></div></div><div class="chat-messages">${state.messages.length ? state.messages.map((message) => `<div class="message-bubble ${message.sender_id === state.userId ? "mine" : "theirs"}"><p>${escapeHtml(message.body)}</p><time>${new Date(message.created_at).toLocaleTimeString([], { hour: "numeric", minute: "2-digit" })}</time></div>`).join("") : `<div class="chat-empty"><span>${icon("MessageCircle", 22)}</span><p>${state.conversationType === "teacher" ? "Ask your teacher for notes or help with a topic." : "Say hello and start the conversation."}</p></div>`}</div><form class="chat-compose" id="message-form"><input name="message" aria-label="Message" placeholder="${state.conversationType === "teacher" ? "Request notes or ask a question..." : "Write a message..."}" autocomplete="off" maxlength="4000" /><button class="button button-dark send-button" aria-label="Send message">${icon("Send", 16)}</button></form>`
     : `<div class="chat-empty choose-chat">${icon("MessageCircle", 24)}<strong>Choose a friend</strong><p>Your accepted friend conversations will appear here.</p></div>`;
-  return `${heading}<div class="messages-layout"><section class="people-panel"><form class="friend-search" id="friend-search-form"><label for="friend-search">Find a friend</label><div class="input-with-button"><span class="at-symbol">@</span><input id="friend-search" name="username" value="${escapeHtml(state.friendSearch)}" placeholder="username" autocomplete="off" /><button class="icon-button search-submit" aria-label="Search usernames">${icon("Search", 17)}</button></div></form>${resultRows ? `<div class="people-list"><div class="list-label">PEOPLE</div>${resultRows}</div>` : ""}<div class="people-list"><div class="list-label">PENDING REQUESTS <span>${incoming.length}</span></div>${requestRows}</div><div class="people-list"><div class="list-label">YOUR FRIENDS <span>${friends.length}</span></div>${friendRows}${outgoing.length ? `<p class="quiet-empty pending-note">${outgoing.length} request${outgoing.length === 1 ? "" : "s"} waiting for a reply.</p>` : ""}</div></section><section class="chat-panel">${chatContent}</section></div>`;
+  const teacherPanel = state.profile.role === "admin"
+    ? `<div class="people-list"><div class="list-label">TEACHER INBOX</div>${teacherRows}</div>`
+    : `<div class="people-list"><div class="list-label">TEACHER</div>${teacherRows}</div>`;
+  return `${heading}<div class="messages-layout"><section class="people-panel">${teacherPanel}${state.profile.role === "admin" ? "" : `<form class="friend-search" id="friend-search-form"><label for="friend-search">Find a friend</label><div class="input-with-button"><span class="at-symbol">@</span><input id="friend-search" name="username" value="${escapeHtml(state.friendSearch)}" placeholder="username" autocomplete="off" /><button class="icon-button search-submit" aria-label="Search usernames">${icon("Search", 17)}</button></div></form>`}${resultRows ? `<div class="people-list"><div class="list-label">PEOPLE</div>${resultRows}</div>` : ""}<div class="people-list"><div class="list-label">PENDING REQUESTS <span>${incoming.length}</span></div>${requestRows}</div>${state.profile.role === "admin" ? "" : `<div class="people-list"><div class="list-label">YOUR FRIENDS <span>${friends.length}</span></div>${friendRows}${outgoing.length ? `<p class="quiet-empty pending-note">${outgoing.length} request${outgoing.length === 1 ? "" : "s"} waiting for a reply.</p>` : ""}`}</section><section class="chat-panel">${chatContent}</section></div>`;
 }
 
 function adminView() {
@@ -273,6 +285,16 @@ function render() {
     adminButton.innerHTML = `${icon("ShieldCheck", 18)}<span>Admin tools</span>`;
     sidebarBottom?.insertBefore(adminButton, profileButton);
   }
+  if (state.profileMenuOpen && state.profile) {
+    const profileButton = app.querySelector(".profile-row");
+    profileButton?.setAttribute("aria-haspopup", "menu");
+    profileButton?.setAttribute("aria-expanded", "true");
+    const profileMenu = document.createElement("div");
+    profileMenu.className = "profile-menu";
+    profileMenu.setAttribute("role", "menu");
+    profileMenu.innerHTML = `<button class="nav-item ${state.view === "messages" ? "active" : ""}" data-action="profile-messages" role="menuitem">${icon("MessageCircle", 17)}<span>Messages</span></button><button class="nav-item" data-action="edit-profile" role="menuitem">${icon("Users", 17)}<span>Edit profile</span></button><button class="nav-item" data-action="sign-out" role="menuitem">${icon("LogOut", 17)}<span>Sign out</span></button>`;
+    profileButton?.before(profileMenu);
+  } else app.querySelector(".profile-row")?.setAttribute("aria-expanded", "false");
   if (state.conversationId) {
     const messages = app.querySelector(".chat-messages");
     if (messages) messages.scrollTop = messages.scrollHeight;
@@ -301,6 +323,7 @@ async function loadProfile() {
     state.profile = data ?? null;
   } else state.profile = null;
   render();
+  if (state.view === "messages" && state.userId) void loadSocial();
 }
 
 async function loadSocial() {
@@ -313,6 +336,28 @@ async function loadSocial() {
     const { data: profiles } = await supabase.from("profiles").select("id,username,display_name,role").in("id", ids);
     state.people = profiles ?? [];
   } else state.people = [];
+  state.teacherId = "";
+  state.teacherConversations = [];
+  if (state.profile?.role === "admin") {
+    const { data: conversations, error: conversationError } = await supabase.from("conversations")
+      .select("id,user_one,user_two,created_at").or(`user_one.eq.${state.userId},user_two.eq.${state.userId}`)
+      .order("created_at", { ascending: false });
+    if (conversationError) { setNotice(conversationError.message); return; }
+    const studentIds = [...new Set((conversations ?? []).map((conversation) => conversation.user_one === state.userId ? conversation.user_two : conversation.user_one))];
+    if (studentIds.length) {
+      const { data: students, error: studentsError } = await supabase.from("profiles").select("id,username,display_name,role").in("id", studentIds);
+      if (studentsError) { setNotice(studentsError.message); return; }
+      state.teacherConversations = (conversations ?? []).map((conversation) => ({
+        conversation,
+        person: students.find((student) => student.id === (conversation.user_one === state.userId ? conversation.user_two : conversation.user_one)),
+      })).filter(({ person }) => person && person.role !== "admin");
+    }
+  } else {
+    const { data: teacher, error: teacherError } = await supabase.from("profiles").select("id")
+      .eq("role", "admin").order("created_at", { ascending: true }).limit(1).maybeSingle();
+    if (teacherError) { setNotice(teacherError.message); return; }
+    state.teacherId = teacher?.id ?? "";
+  }
   render();
 }
 
@@ -320,6 +365,25 @@ let messageChannel;
 function stopMessageSubscription() {
   if (messageChannel && supabase) void supabase.removeChannel(messageChannel);
   messageChannel = null;
+}
+
+async function showConversation(conversationId, name, type) {
+  state.conversationId = conversationId;
+  state.conversationName = name;
+  state.conversationType = type;
+  const result = await supabase.from("messages").select("id,conversation_id,sender_id,body,created_at").eq("conversation_id", conversationId).order("created_at");
+  if (result.error) setNotice(result.error.message);
+  state.messages = result.data ?? [];
+  stopMessageSubscription();
+  messageChannel = supabase.channel(`conversation:${conversationId}`).on("postgres_changes", {
+    event: "INSERT", schema: "public", table: "messages", filter: `conversation_id=eq.${conversationId}`,
+  }, ({ new: record }) => {
+    if (!state.messages.some((message) => message.id === record.id)) {
+      state.messages.push(record);
+      render();
+    }
+  }).subscribe();
+  render();
 }
 
 async function openConversation(person) {
@@ -330,21 +394,30 @@ async function openConversation(person) {
     ({ data, error } = await supabase.from("conversations").insert({ user_one, user_two }).select("id").single());
   }
   if (error || !data) { setNotice(error?.message ?? "Could not open conversation."); return; }
-  state.conversationId = data.id;
-  state.conversationName = person.display_name || person.username;
-  const result = await supabase.from("messages").select("id,conversation_id,sender_id,body,created_at").eq("conversation_id", data.id).order("created_at");
-  if (result.error) setNotice(result.error.message);
-  state.messages = result.data ?? [];
-  stopMessageSubscription();
-  messageChannel = supabase.channel(`conversation:${data.id}`).on("postgres_changes", {
-    event: "INSERT", schema: "public", table: "messages", filter: `conversation_id=eq.${data.id}`,
-  }, ({ new: record }) => {
-    if (!state.messages.some((message) => message.id === record.id)) {
-      state.messages.push(record);
-      render();
-    }
-  }).subscribe();
-  render();
+  await showConversation(data.id, person.display_name || person.username, "friend");
+}
+
+async function openTeacherConversation(conversationId = "") {
+  if (!supabase || !state.userId) return;
+  if (state.profile?.role === "admin") {
+    const thread = state.teacherConversations.find(({ conversation }) => conversation.id === conversationId);
+    if (!thread) return;
+    await showConversation(thread.conversation.id, thread.person.display_name || thread.person.username, "teacher");
+    return;
+  }
+  if (!state.teacherId) {
+    setNotice("There is no admin account available to receive teacher messages.");
+    return;
+  }
+  const [user_one, user_two] = [state.userId, state.teacherId].sort();
+  let { data, error } = await supabase.from("conversations").select("id")
+    .eq("user_one", user_one).eq("user_two", user_two).maybeSingle();
+  if (error) { setNotice(error.message); return; }
+  if (!data) {
+    ({ data, error } = await supabase.from("conversations").insert({ user_one, user_two }).select("id").single());
+  }
+  if (error || !data) { setNotice(error?.message ?? "Could not open the teacher conversation."); return; }
+  await showConversation(data.id, "Teacher", "teacher");
 }
 
 async function handleAuth(form) {
@@ -476,11 +549,13 @@ app.addEventListener("click", async (event) => {
   if (action === "auth") openAuth();
   if (action === "profile") {
     if (!state.profile) openAuth();
-    else { state.profileOpen = true; state.modalError = ""; render(); }
+    else { state.profileMenuOpen = !state.profileMenuOpen; render(); }
   }
+  if (action === "profile-messages") setView("messages");
+  if (action === "edit-profile") { state.profileMenuOpen = false; state.profileOpen = true; state.modalError = ""; render(); }
   if (action === "sign-out") {
     await supabase.auth.signOut();
-    state.profileOpen = false; state.view = "overview"; state.notice = "Signed out.";
+    state.profileOpen = false; state.profileMenuOpen = false; state.view = "overview"; state.notice = "Signed out.";
     render();
   }
   if (action === "setup-notice") { event.preventDefault(); setNotice("Add VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY to .env.local, then restart the app."); }
@@ -491,7 +566,8 @@ app.addEventListener("click", async (event) => {
   if (action === "friend-request") { const person = state.friendResults.find((item) => item.id === target.dataset.id); if (person) await sendFriendRequest(person.id); }
   if (action === "accept" || action === "reject") await respondToRequest(target.dataset.id, action === "accept");
   if (action === "open-chat") { const person = state.people.find((item) => item.id === target.dataset.id); if (person) await openConversation(person); }
-  if (action === "close-chat") { state.conversationId = ""; state.messages = []; stopMessageSubscription(); render(); }
+  if (action === "open-teacher-chat") await openTeacherConversation(target.dataset.id);
+  if (action === "close-chat") { state.conversationId = ""; state.conversationType = "friend"; state.messages = []; stopMessageSubscription(); render(); }
   if (target.dataset.person && !target.closest(".person-action")) {
     const person = state.people.find((item) => item.id === target.dataset.person);
     if (person && state.requests.some((request) => request.status === "accepted" && [request.requester_id, request.recipient_id].includes(person.id))) await openConversation(person);

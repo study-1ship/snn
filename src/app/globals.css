@@ -23,7 +23,7 @@ button:focus-visible, a:focus-visible, input:focus-visible, select:focus-visible
 a { color: inherit; }
 
 .app-shell { min-height: 100vh; }
-.sidebar { position: fixed; z-index: 5; inset: 0 auto 0 0; display: flex; flex-direction: column; width: 246px; padding: 26px 16px 14px; background: #fff; border-right: 1px solid var(--line); }
+.sidebar { position: fixed; z-index: 5; inset: 0 auto 0 0; display: flex; flex-direction: column; width: 246px; overflow-y: auto; padding: 26px 16px 14px; background: #fff; border-right: 1px solid var(--line); }
 .brand { display: flex; align-items: center; gap: 10px; margin: 0 0 42px 9px; color: var(--green-dark); text-decoration: none; font-family: var(--font-display); font-size: 19px; font-weight: 800; line-height: 1.1; }
 .brand-mark { display: grid; place-items: center; width: 35px; height: 35px; border-radius: 11px; background: var(--green); color: #fff; }
 .brand-dot { color: var(--orange); }
@@ -49,7 +49,7 @@ a { color: inherit; }
 .lemon { background: #f5f0d7; color: #958442; }
 .rose { background: #f5e5e4; color: #aa6767; }
 .mint { background: #e1efeb; color: #478074; }
-.sidebar-bottom { position: relative; margin-top: auto; }
+.sidebar-bottom { position: relative; flex-shrink: 0; margin-top: auto; }
 .side-note { position: relative; overflow: hidden; margin: 0 3px 19px; padding: 15px 13px 14px; border-radius: 8px; background: #f0f4ee; }
 .side-note::after { position: absolute; right: -12px; bottom: -27px; width: 80px; height: 80px; border: 1px solid #d8e5d9; border-radius: 50%; content: ""; }
 .side-note-art { display: grid; width: 29px; height: 29px; place-items: center; border-radius: 8px; background: #dcebe1; color: var(--green); }
